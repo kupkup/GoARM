@@ -8,18 +8,25 @@ import(
 	"strings"	
 )
 
+const (  
+	datetime   = "2006-01-02 15:04:05"   
+    date       = "2006-01-02"  
+    longtime   = "15:04:05"  
+    shorttime  = "15:04"  
+) 
+
 func main(){
 
 
 	var service = ":9500"
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)	
-	checkError(err)
+	handleError(err)
 
 	listener, err := net.ListenTCP("tcp", tcpAddr)
-	checkError(err)
+	handleError(err)
 
-	fmt.Println("server listen: " + service)
+	fmt.Printf("[%s] server listen: %s \n", time.Now().Format(longtime), service)
 
 	for{
 
@@ -28,9 +35,8 @@ func main(){
 			continue
 		}
 		
-		fmt.Println("new connection: " + conn.RemoteAddr().String())
+		fmt.Printf("[%s] new connection: %s \n", time.Now().Format(longtime), conn.RemoteAddr().String())
 		go handleClient(conn)
-
 
 	}
 }
@@ -49,28 +55,30 @@ func handleClient(conn net.Conn){
 			break
 		}
 
-		cmdText := strings.TrimSpace(string(request[:readLen]))
-
 		if( readLen == 0) {
 			break
+		}
 
-		} else if ( cmdText == "exit" || cmdText == "quit" || cmdText == "q" ) {	
+		cmdText := strings.TrimSpace(string(request[:readLen]))
+		
+		fmt.Printf("[%s] %s> %s \n", time.Now().Format(longtime), conn.RemoteAddr().String(), cmdText)
+		
+		if ( cmdText == "exit" || cmdText == "quit" || cmdText == "q" ) {	
 
-			fmt.Println("server close!")
+			fmt.Printf("[%s] server close! \n", time.Now().Format(longtime))
 			os.Exit(0)
 			
 		} else if ( cmdText == "disconnect" || cmdText == "close") {
 			
-			fmt.Println("disconnected: " + conn.RemoteAddr().String())
+			fmt.Printf("[%s] disconnect: %s \n", time.Now().Format(longtime), conn.RemoteAddr().String())
 			break
 
 		} else if ( cmdText == "time" ){
 		
-			conn.Write([]byte(time.Now().String()))	
+			conn.Write([]byte(time.Now().Format(datetime)))	
 
 		} else {
 
-			fmt.Println(conn.RemoteAddr().String() + "> " + cmdText + "\r\n")
 			conn.Write([]byte(cmdText))	
 
 		}
@@ -81,7 +89,7 @@ func handleClient(conn net.Conn){
 
 
 
-func checkError(e error){
+func handleError(e error){
 	if e != nil {
 		fmt.Fprintln(os.Stderr, "Fatal Error: " + e.Error())
 		os.Exit(1)
